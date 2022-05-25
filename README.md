@@ -11,8 +11,8 @@ The use of a representative subset (M datapoints) with Kranosky's computational 
 
 ### About the Author
 My name is Phil Parisi and I am working toward my MS/PhD in Ocean Engineering. Developing a skillset to work on autonomous marine robotics.
-LinkedIn: https://www.linkedin.com/in/phil-parisi/
-Portfolio & Travel: https://philparisi.weebly.com/
+LinkedIn: https://www.linkedin.com/in/phil-parisi/ \n
+Portfolio & Travel: https://philparisi.weebly.com/ \n
 GitHub: https://github.com/PhilParisi
 YouTube Channel: https://www.youtube.com/PhilsBeginnerCode
 
