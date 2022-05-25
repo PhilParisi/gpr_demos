@@ -2,10 +2,10 @@
 Easy-to-run versions of Gaussian Process Regression.
 
 ## Purpose of this Repository
-Gaussian Process Regression (GPR) often feels esoteric due to the nature of high-level mathematics involved in derivations. This Repository is dedicated to the visualization of GPR. It is meant to aid my personal journey of working with GPR as well as serve as a tool for other to easily download and run basic versions of GPR. Hence, barriers of entry are minimzed (system requirements are minimal, datasets are small and generated natively).
+Gaussian Process Regression (GPR) often feels esoteric due to high-level mathematics involved. This repository is dedicated to simple GPR problems and visualization thereof. It is meant to not only aid my personal journey as I learn GPR, but also be a tool for others to easily download and run basic versions of GPR. Hence, barriers of entry are minimzed (free code, thoroughly commented code, minimal system requirements, compact datsets).
 
 ## Purpose of the Project 
-Traditional regression methodologies only provide depths at prediction points not directly measured by multi-beam sonar; however, GPR provides both depths and uncertainty at a given prediction point. Multi-beam sonar surveys generate datasets with millions of points and it is well known that GPR is intractable with massive datasets (the algorithm scales with O(N^3) due to matrix inversion). Hence, previous work (Krasnosky, 2021) demonstrates computation speed-up from the approach of memory storage, cholesky factor updates, and processing with GPUs/CUDA. What has not be implemented, is the use to informative downsampling of massive dataset of N terms to generate a sparse representative subset containing M datapoints that is able to be processed efficiently.
+Multi-beam sonar systems use acoustics to measure distance from system to points along the seafloor. These measurements are converted into depths and subsequent bathymetric (seafloor) maps are generated. Traditional regression methodologies only provide depths at prediction points not directly measured by multi-beam sonar; however, GPR provides both depths and uncertainty at a given prediction point. Multi-beam sonar surveys generate datasets with millions of points and it is well known that the GPR algorithm is intractable with massive datasets (the algorithm scales with O(N^3) due to matrix inversion). Hence, previous work (Krasnosky, 2021) demonstrated computation speed-up from the approach of memory storage, cholesky factor updates, and processing with GPUs/CUDA. What has not be implemented by our team (but has been in literature), is the use of informative downsampling of a massive dataset with N datapoints to generate a sparse representative subset containing M datapoints that is able to be processed efficiently.
 
 The use of a representative subset (M datapoints) with Kranosky's computational resource management should yield drastically accelerated calculation time while maintaining accuracy comparable to full GPR (all N datapoints).
 
@@ -17,5 +17,5 @@ GitHub: https://github.com/PhilParisi <br>
 YouTube Channel: https://www.youtube.com/PhilsBeginnerCode <br>
 
 ### Acknowledgements
-This work would not be possible without my PhD Advisor, Dr. Chris Roman (URI), and preceeding work done by Dr. Kristopher Krasnosky (URI). 
+This work would not be possible without my PhD Advisor, Dr. Chris Roman (URI), and preceeding work done by Dr. Kristopher Krasnosky (URI). Shoutout to the brilliant minds behind the development of classic and modern GPR: Rasmussen, Williams, Seeger, Lawrence, Csato, Qi, and many others.
 
