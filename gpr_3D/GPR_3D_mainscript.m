@@ -1,17 +1,24 @@
-%%% 2.5D GPR in MATLAB // URI Phillip Parisi - Update June 2022
-%%% Approach from Dr. Kristopher Krasnosky
+%%% 3D GPR in MATLAB // URI Phillip Parisi - Update June 2022
 
-%%% Version Control Notes
 % THIS VERSION USES 3D DATA (technically, 2.5D data)
-% X and Y position on seafloor (training inputs)
-% Z as depth of seafloor (training outputs,predictions)
+% X and Y --> position on seafloor (training inputs)
+% Z --> depth of seafloor at given position (training outputs)
 
 %%%% GUIDE TO USE
 % .m files you need (all in one folder):
-% 1 CalcKernel.m
-% 2 CalcKStar.m
-% 3 K_Function.m
-% 4 this script, which is the main script
+% 1. this script, which is the main script
+% gpr_functions folder
+    % 2. SqExpKernel.m, the kernel function
+    % 3. K_Function.m, which builds the covariance matrix
+
+% Add gpr_functions to the path
+% you can do this manually with addpath(.../filepath/gpr_functions) 
+    % if below code does not work
+dir_path = cd;
+idcs = strfind(dir_path,'/');
+func_dir = dir_path(1:idcs(end));
+func_dir = strcat(func_dir,"gpr_functions");
+addpath(func_dir);
 
 %%%% RUNNING & PARAMETERS TO TWEAK
 % this script should be good to run out-of-the-box
@@ -19,16 +26,15 @@
 % the GPR data points are plotted in red w/ error bars (uncertainty)
 
 % You can TUNE
-% - Kernel Hyperparameters: lengthscale -> hp.L, verticalscale, hp.sig
-% - the Training Data + Noise section (nnum is the range for the raw trainig data)
+% - Kernel Hyperparameters: lengthscale -> hp.L, verticalscale, hp.sigma
+% - not recommended to change the map_size, but possible
 
-%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETUP
 clc, clearvars, close all, format compact
 
 % Kernel Hyperparameters
-hp.L = 2;           % lengthscale (high = smoother, low = noisier)
-hp.sigma = 3;         % output scale / vertical scale  
+hp.L = 3;           % lengthscale (high = smoother, low = noisier)
+hp.sigma = 4;         % output scale / vertical scale  
 
 %%%%%% Generate Random Training Data + Noise (2.5D)
 map_size = 20; % side of square map dimensions, keep this even if you can 
@@ -40,7 +46,9 @@ y = (-map_size/2:(map_size/2-1));
 X = X + randn(map_size,map_size);
 Y = Y + randn(map_size,map_size);
 Z = 1*sin(X) + Y/20;                    % shape of curve!
-Z = Z + randn(map_size,map_size)/5;
+% gaussian nosie
+noise.mu = 0; noise.sigma = 0.25;
+Z = Z + normrnd(noise.mu,noise.sigma,map_size,map_size)/5;
 
 % Reshape (map_size^2 x 1)
 X1 = reshape(X,map_size^2,1);
@@ -55,16 +63,18 @@ clearvars -except X Y map_size nnum hp
 
 % Plot
 figure
-scatter3(X(:,1),X(:,2),Y,'.')
+scatter3(X(:,1),X(:,2),Y,'k.')
 xlabel('X'),ylabel('Y'),zlabel('Depth')
 title('Raw Training Data'), zlim([-5 5])
 
 %%%%%% Prediction Points STAR
-x_star = (-map_size/2:(map_size/2-1)); 
-y_star = (-map_size/2:(map_size/2-1)); 
+% predict at more points than the raw data
+predict_pts = map_size*2;
+x_star = (-predict_pts/2:0.5:(predict_pts/2)-0.5); 
+y_star = (-predict_pts/2:0.5:(predict_pts/2)-0.5); %adding pts twice as dense
 [x_star,y_star] = meshgrid(x_star,y_star);
-x_star = reshape(x_star,map_size^2,1);
-y_star = reshape(y_star,map_size^2,1);
+x_star = reshape(x_star,(2*predict_pts)^2,1);
+y_star = reshape(y_star,(2*predict_pts)^2,1);
 
 X_Star = [x_star y_star]; % m x 2 % vertical array, can add training data for prediction X
 clear x_star y_star
@@ -73,7 +83,7 @@ disp('...test data generated, run the next section...')
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MATRIX CALCS
-clc, close all
+clc, close all, disp('...running, may take a minute...')
 tic 
 
 % Calculate V and Inv(V)                            % depends on training x-points only
@@ -96,7 +106,7 @@ Y_Star_Var = diag(CapSigma_Star);                      % The diagonals store the
 toc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS
 
-% Plot Original Data
+%%%% Plot Raw Data
 figure
 scatter3(X(:,1),X(:,2),Y, ...       % Training Data
     2, ... % marker size
@@ -104,7 +114,7 @@ scatter3(X(:,1),X(:,2),Y, ...       % Training Data
 xlabel('X'),ylabel('Y'),zlabel('Depth')
 title('Raw Training Data'), zlim([-5 5])
 
-% Plot Prediction Data
+%%%%% Plot Prediction Data
 figure
 scatter3(X(:,1),X(:,2),Y, ...       % Training Data
     2, ... % marker size
@@ -113,11 +123,15 @@ scatter3(X_Star(:,1),X_Star(:,2),Y_Star_Hat,...  % Predictions
     10,... % marker size
     Y_Star_Var, ...
     'filled') % color of pts
+xlabel('X'), ylabel('Y'), zlabel('Depth')
+title('GPR 3D - Seafloor Ripples')
+zlim([-5 5])
+legend('Predictions','Location','North')
 colormap(); 
 bar = colorbar();
 ylabel(bar,'variance')
 xlabel('X'), ylabel('Y'), zlabel('Depth')
-title('GPR 2.5D - Seafloor Ripples')
+title('GPR 3D - Seafloor Ripples')
 zlim([-5 5])
 
 % Training and Prediction Data
@@ -127,18 +141,15 @@ scatter3(X(:,1),X(:,2),Y, ...       % Training Data
     'k') % color of pts
 hold on
 
-% Plot Prediction Data
-scatter3(X(:,1),X(:,2),Y, ...       % Training Data
-    2, ... % marker size
-    'k') % color of pts
 scatter3(X_Star(:,1),X_Star(:,2),Y_Star_Hat,...  % Predictions
     10,... % marker size
     Y_Star_Var, ...
     'filled') % color of pts
+xlabel('X'), ylabel('Y'), zlabel('Depth')
+title('GPR 3D - Seafloor Ripples')
+zlim([-5 5])
 colormap(); 
+legend('Raw Data','Predictions','Location','North')
 bar = colorbar();
 ylabel(bar,'variance')
-xlabel('X'), ylabel('Y'), zlabel('Depth')
-title('GPR 2.5D - Seafloor Ripples')
-zlim([-5 5])
 

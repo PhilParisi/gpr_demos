@@ -1,17 +1,21 @@
-%%% GPR in MATLAB // URI Phillip Parisi - Update April 2022
-%%% Approach from Dr. Kristopher Krasnosky
-
-%%% Version Control Notes
-% Added Randomness (process noise)
-% Training Data X-Values are Randomized
-% Everything Matches KK's Disseration Line 22
+%%% GPR in MATLAB // URI Phillip Parisi - Update June 2022
+tic, clc, clearvars, close all, format compact
 
 %%%% GUIDE TO USE
 % .m files you need (all in one folder):
-% 1 CalcKernel.m
-% 2 CalcKStar.m
-% 3 K_Function.m
-% 4 this script, which is the main script
+% 1. this script, which is the main script
+% gpr_functions folder
+    % 2. SqExpKernel.m, the kernel function
+    % 3. K_Function.m, which builds the covariance matrix
+
+% Add gpr_functions to the path
+% you can do this manually with addpath(.../filepath/gpr_functions) 
+    % if below code does not work
+dir_path = cd;
+idcs = strfind(dir_path,'/');
+func_dir = dir_path(1:idcs(end));
+func_dir = strcat(func_dir,"gpr_functions");
+addpath(func_dir);
 
 %%%% RUNNING & PARAMETERS TO TWEAK
 % this script should be good to run out-of-the-box
@@ -19,31 +23,36 @@
 % the GPR data points are plotted in red w/ error bars (uncertainty)
 
 % You can TUNE
-% - Kernel Hyperparameters: lengthscale -> hp.L, verticalscale, hp.sig
-% - the Training Data + Noise section (nnum is the range for the raw trainig data)
+% - Kernel Hyperparameters: lengthscale -> hp.L, verticalscale, hp.sigma
+% - nnum, number of points you want in the dataset
+
+% Add gpr_functions to the path
+% you can do this manually with addpath(.../filepath/gpr_functions) 
+    % if below code does not work
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETUP
-tic, clc, clearvars, close all, format compact
 
-% Kernel Hyperparameters
+% Kernel Hyperparameters [not optimized/trained]
 hp.L = 4;           % lengthscale (high = smoother, low = noisier)
-hp.sig = 3;         % output scale / vertical scale  
+hp.sigma = 3;       % output scale (aka vertical scale)
 
-% Training Data + Noise (aka Raw Data)
-nnum = 40; X_beg = -nnum; X_end = nnum;
+% Training Data + Gaussian Noise (aka Raw Data)
+nnum = 100; X_beg = -nnum; X_end = nnum;
 X = (X_end - X_beg)*rand(nnum,1) + X_beg;           % vertical array, training X, uniform random
-Y = 3*sin(2*pi/40*X) + (rand(nnum,1)*1 - 0.5);      % vertical array, training Y, sinusoidal + noise
+noise.mu = 0; noise.sigma = 0.25;
+Y = 3*sin(2*pi/(0.5*nnum)*X) + (normrnd(noise.mu,noise.sigma,nnum,1)*0.5);  % vertical array, training Y, sinusoidal + noise
 
 % Prediction Points STAR
 X_Star = [[(-15+X_beg):2:(15+X_end)]'; X];            % vertical array, add training data for prediction X
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MATRIX CALCS
 
 % Calculate V and Inv(V)                            % depends on training x-points only
 var_sig = 0.8;                                      % Process Noise (noise from sensor)
 W = (var_sig.^2)*eye(nnum);                         % Whitenoise (identity * sigmasquared)
-V = K_Function(X,X,hp) + W;                            % Calculate Covariance Matrix using Kernel
+V = K_Function(X,X,hp) + W;                         % Calculate Covariance Matrix using Kernel
 V_inv = inv(V);
 
 
@@ -54,18 +63,17 @@ K_StarStar = K_Function(X_Star,X_Star,hp);             % Calculate K_StarStar fo
 
 % Calculate Predictions!                            % Finally bring in the training y-points here
 Y_Star_Hat = K_Star * V_inv * Y;                    % Y Predictions (mean values of Gaussians)
-Sigma_Star = K_StarStar - K_Star * V_inv * K_Star'; % Variance Predictions (gives us mean, var for each pt)
-Sigma_Star = diag(Sigma_Star);                      % The diagonals store the variances we want!
+CapSigma_Star = K_StarStar - K_Star * V_inv * K_Star'; % Variance Predictions (gives us mean, var for each pt)
+Y_Star_Var = diag(CapSigma_Star);                      % The diagonals store the variances we want!
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS
 
 % Plot Training and Prediction Data w/ Error Bars
 figure
-plot(X_Star,Y_Star_Hat,'ro','MarkerFaceColor','r','MarkerEdgeColor','k'), hold on
-errorbar(X_Star,Y_Star_Hat,Sigma_Star,'r.','LineWidth',2)
-plot(X,Y,'bo','MarkerFaceColor','b','MarkerSize',8), grid on, hold on
+errorbar(X_Star,Y_Star_Hat,Y_Star_Var,'r.','LineWidth',2), hold on
+plot(X,Y,'bo','MarkerFaceColor','b','MarkerSize',4) 
 xlabel('X Values'), ylabel('Y Values'), title('Gaussian Process Regression')
-legend('Predicted', 'Uncertainty','Raw Data')
+legend('Predictions \mu,\sigma^2','Raw Data'), grid on
 
 toc
