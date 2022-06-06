@@ -15,6 +15,7 @@ LinkedIn: https://www.linkedin.com/in/phil-parisi/ <br>
 Portfolio & Travel: https://philparisi.weebly.com/ <br>
 GitHub: https://github.com/PhilParisi <br>
 YouTube Channel: https://www.youtube.com/PhilsBeginnerCode <br>
+Patreon: https://patreon.com/PhilsBeginnerCode <br>
 
 ### Acknowledgements
 This work would not be possible without my PhD Advisor, Dr. Chris Roman (URI), and preceeding work done by Dr. Kristopher Krasnosky (URI). Shoutout to the brilliant minds behind the development of classic and modern GPR for Machine Learning: Rasmussen, Williams, Seeger, Lawrence, Csato, Qi, and many others.
