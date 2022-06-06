@@ -1,4 +1,4 @@
-function [k] = CalcKernel(x,y, hp)
+function [k] = SqExpKernel(x,y, hp)
     % Squared Exponential Kernel Function
     %   kij = exp(-abs(x - y)^2)
     L = hp.L;
