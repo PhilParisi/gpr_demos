@@ -67,11 +67,13 @@ CapSigma_Star = K_StarStar - K_Star * V_inv * K_Star'; % Variance Predictions (g
 Y_Star_Var = diag(CapSigma_Star);                      % The diagonals store the variances we want!
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS
 
 % Plot Training and Prediction Data w/ Error Bars
+%   Error bars are typically represented as 2sigma (variance is sigma^2
 figure
-errorbar(X_Star,Y_Star_Hat,Y_Star_Var,'r.','LineWidth',2), hold on
+errorbar(X_Star,Y_Star_Hat,2*sqrt(Y_Star_Var),'r.','LineWidth',2), hold on
 plot(X,Y,'bo','MarkerFaceColor','b','MarkerSize',4) 
 xlabel('X Values'), ylabel('Y Values'), title('Gaussian Process Regression')
 legend('Predictions \mu,\sigma^2','Raw Data'), grid on

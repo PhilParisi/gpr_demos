@@ -115,13 +115,14 @@ xlabel('X'),ylabel('Y'),zlabel('Depth')
 title('Raw Training Data'), zlim([-5 5])
 
 %%%%% Plot Prediction Data
+% 2sigma are plotted rather than variance
 figure
 scatter3(X(:,1),X(:,2),Y, ...       % Training Data
     2, ... % marker size
     'k') % color of pts
 scatter3(X_Star(:,1),X_Star(:,2),Y_Star_Hat,...  % Predictions
     10,... % marker size
-    Y_Star_Var, ...
+    2*sqrt(Y_Star_Var), ... % 2sigma
     'filled') % color of pts
 xlabel('X'), ylabel('Y'), zlabel('Depth')
 title('GPR 3D - Seafloor Ripples')
@@ -143,7 +144,7 @@ hold on
 
 scatter3(X_Star(:,1),X_Star(:,2),Y_Star_Hat,...  % Predictions
     10,... % marker size
-    Y_Star_Var, ...
+    2*sqrt(Y_Star_Var), ... % 2sigma
     'filled') % color of pts
 xlabel('X'), ylabel('Y'), zlabel('Depth')
 title('GPR 3D - Seafloor Ripples')
