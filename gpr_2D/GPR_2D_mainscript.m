@@ -34,12 +34,12 @@ addpath(func_dir);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETUP
 
 % Kernel Hyperparameters [not optimized/trained]
-hp.L = 4;           % lengthscale (high = smoother, low = noisier)
-hp.sigma = 3;       % output scale (aka vertical scale)
+hp.L = 10;           % lengthscale (high = smoother, low = noisier)
+hp.sigma = 2.5;       % output scale (aka vertical scale or process noise)
 
 % Training Data + Gaussian Noise (aka Raw Data)
 nnum = 100; X_beg = -nnum; X_end = nnum;
-X = (X_end - X_beg)*rand(nnum,1) + X_beg;           % vertical array, training X, uniform random
+X = sort((X_end - X_beg)*rand(nnum,1) + X_beg);           % vertical array, training X, uniform random
 noise.mu = 0; noise.sigma = 0.25;
 Y = 3*sin(2*pi/(0.5*nnum)*X) + (normrnd(noise.mu,noise.sigma,nnum,1)*0.5);  % vertical array, training Y, sinusoidal + noise
 
@@ -50,7 +50,7 @@ X_Star = [[(-15+X_beg):2:(15+X_end)]'; X];            % vertical array, add trai
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MATRIX CALCS
 
 % Calculate V and Inv(V)                            % depends on training x-points only
-var_sig = 0.8;                                      % Process Noise (noise from sensor)
+var_sig = 0.8;                                      % Noise (sensor noise upon receiving data)
 W = (var_sig.^2)*eye(nnum);                         % Whitenoise (identity * sigmasquared)
 V = K_Function(X,X,hp) + W;                         % Calculate Covariance Matrix using Kernel
 V_inv = inv(V);
@@ -68,14 +68,38 @@ Y_Star_Var = diag(CapSigma_Star);                      % The diagonals store the
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOG MARGINAL LIKELIHOOD
+% How good is our fit?
+
+% note log in compsci means natural log, and matlab's log() is natural log
+
+LML = -0.5*log(det(V)) - 0.5*Y'*V_inv*Y - 0.5*nnum*log(2*pi)
+
+LML_array=[];
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS
 
-% Plot Training and Prediction Data w/ Error Bars
-%   Error bars are typically represented as 2sigma (variance is sigma^2
+% Organize Data to Plot It (created new obj
+sortobj = [X_Star, Y_Star_Hat, Y_Star_Var];
+sortobj = sortrows(sortobj);
+sorted.X_Star = sortobj(:,1); sorted.Y_Star_Hat = sortobj(:,2); sorted.Y_Star_Var = sortobj(:,3);
+
+% Error Bar Plot (Training Data + Predictoins w/ Error Bars)
+    %Error bars are typically represented as 2sigma (variance is sigma^2
+% figure
+% errorbar(sorted.X_Star,sorted.Y_Star_Hat,2*sqrt(sorted.Y_Star_Var),'r.','LineWidth',2), hold on
+% plot(X,Y,'bo','MarkerFaceColor','b','MarkerSize',4) 
+% xlabel('X Values'), ylabel('Y Values'), title('Gaussian Process Regression')
+% legend('Predictions \mu,\sigma^2','Raw Data'), grid on
+
+% Bounded Plot (Training Data + Predictions + 2sigma Upper and Lower Bound
 figure
-errorbar(X_Star,Y_Star_Hat,2*sqrt(Y_Star_Var),'r.','LineWidth',2), hold on
-plot(X,Y,'bo','MarkerFaceColor','b','MarkerSize',4) 
+p1 = plot(sorted.X_Star,sorted.Y_Star_Hat + 2*sqrt(sorted.Y_Star_Var),'r','LineWidth',2); hold on %upper bound
+plot(sorted.X_Star,sorted.Y_Star_Hat - 2*sqrt(sorted.Y_Star_Var),'r','LineWidth',2); % lower bound
+p2 = plot(sorted.X_Star,sorted.Y_Star_Hat,'r--','Linewidth',2); % prediction means
+p3 = plot(X,Y,'bo','MarkerFaceColor','b','MarkerSize',4); % training data
 xlabel('X Values'), ylabel('Y Values'), title('Gaussian Process Regression')
-legend('Predictions \mu,\sigma^2','Raw Data'), grid on
+grid on, legend([p3 p2 p1],"Training Data","Prediction \mu","Prediction 2\sigma")
 
 toc
