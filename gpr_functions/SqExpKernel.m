@@ -3,36 +3,38 @@ function [k] = SqExpKernel(x,y,hp)
 % Inputs: two datapoints (x,y) and hyperparameters (hp)
 
 % hyperparameters stored in structure
-    % a large sigma is a tigther fit - better at/between training data but
+    % a large sigma_p is a tigther fit - better at/between training data but
     %   blows up beyond the training data
 
-% Error Message if matrix is not in right orientation (should be vertical)
+
+
+%%%%% Error Message if matrix is not in right orientation (should be vertical)
 if length(x) ~= height(x)
     disp('Ensure matrices inputted to kernel are VERTICAL (e.g. 100x2)')
     return
 end
 
-%%%%% 2D Squared Exponential
-if size(x(1,:),2) == 1                              % data contain scalars
 
-    % distance between two points
-    dist = (x-y);                                   % scalar
-    
-    k = (hp.sigma^2)*exp( -(dist^2)/(2*hp.L^2) );   % scalar
+%%%%% EXACT SQUARED EXPONENTIAL KERNEL
+% Distance between Points and Covariance Value
+if size(x(1,:),2) == 1                              % data is 1x1 scalars
+    dist = abs(x-y);                                % 1D
+    k = (hp.sigma_p^2)*exp( -(dist^2)/(2*hp.L^2) ); % scalar
+
+elseif size(x(1,:),2) == 2                          % data is 1x2 vectors
+    dist = sqrt( (x(1)-y(1))^2 + (x(2)-y(2))^2 );   % 2D
+    k = (hp.sigma_p^2)*exp( -(dist^2)/(2*hp.L^2) ); % scalar
+
+else
+    disp("Kernel function is NOT setup to process your type of data.")
+    return
 
 end
 
-%%%%% 2D Squared Exponential
-if size(x(1,:),2) == 2                              % data contain 1x2 vectors
 
-    % distance between two points
-    dist = sqrt( (x(1)-y(1))^2 + (x(2)-y(2))^2 );   % scalar
-    
-    k = (hp.sigma^2)*exp( -(dist^2)/(2*hp.L^2) );
-   
-end
 
-%k = round(k,4);
+
+
 
 % Great Resource
 % http://evelinag.com/Ariadne/covarianceFunctions.html
