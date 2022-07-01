@@ -34,7 +34,9 @@ clc, clearvars, close all, format compact
 
 % Kernel Hyperparameters
 hp.L = 3;           % lengthscale (high = smoother, low = noisier)
-hp.sigma = 4;         % output scale / vertical scale  
+hp.sigma_p = 4;         % process noise (output scale / vertical scale)
+hp.sigma_n = 0.6;   % sensor noise (used to create W)
+hp.kerneltype = 'sparse'; % 'exact' or 'sparse' approximate kernel
 
 %%%%%% Generate Random Training Data + Noise (2.5D)
 map_size = 20; % side of square map dimensions, keep this even if you can 
@@ -87,20 +89,24 @@ clc, close all, disp('...running, may take a minute...')
 tic 
 
 % Calculate V and Inv(V)                            % depends on training x-points only
-var_sig = 0.8;                                      % Process Noise (noise from sensor)
-W = (var_sig.^2)*eye(nnum);                         % Whitenoise (identity * sigmasquared)
+W = (hp.sigma_n^2)*eye(nnum);                       % Whitenoise (identity * sigmasquared)
 V = K_Function(X,X,hp) + W;                         % Calculate Covariance Matrix using Kernel
-V_inv = inv(V); %expensive!
+%V_inv = inv(V); %expensive!
 
 
 % Generate K Parameters
-K_Star = K_Function(X_Star,X,hp);                      % Calculate K_Star for New Point(s)
-K_StarStar = K_Function(X_Star,X_Star,hp);             % Calculate K_StarStar for New Point(s)
-
+K_Star = K_Function(X_Star,X,hp);                   % Calculate K_Star for New Point(s)
+tic
+K_StarStar = K_Function(X_Star,X_Star,hp);          % Calculate K_StarStar for New Point(s)
+kerneltime = toc
+% Cholesky Decomposition
+L = chol(V,'lower');                               % Lower triangular cholesky factor
 
 % Calculate Predictions!                            % Finally bring in the training y-points here
-Y_Star_Hat = K_Star * V_inv * Y;                    % Y Predictions (mean values of Gaussians)
-CapSigma_Star = K_StarStar - K_Star * V_inv * K_Star'; % Variance Predictions (gives us mean, var for each pt)
+%Y_Star_Hat = K_Star * V_inv * Y;                    % Y Predictions (mean values of Gaussians)
+Y_Star_Hat = K_Star * CholeskySolve(L,Y);
+%CapSigma_Star = K_StarStar - K_Star * V_inv * K_Star'; % Variance Predictions (gives us mean, var for each pt)
+CapSigma_Star = K_StarStar-K_Star*CholeskySolve(L,K_Star');
 Y_Star_Var = diag(CapSigma_Star);                      % The diagonals store the variances we want!
 
 toc

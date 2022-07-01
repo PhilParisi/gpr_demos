@@ -7,14 +7,6 @@ function [k] = SqExpKernel(x,y,hp)
     %   blows up beyond the training data
 
 
-
-%%%%% Error Message if matrix is not in right orientation (should be vertical)
-if length(x) ~= height(x)
-    disp('Ensure matrices inputted to kernel are VERTICAL (e.g. 100x2)')
-    return
-end
-
-
 %%%%% EXACT SQUARED EXPONENTIAL KERNEL
 % Distance between Points and Covariance Value
 if size(x(1,:),2) == 1                              % data is 1x1 scalars

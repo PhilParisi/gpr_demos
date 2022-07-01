@@ -7,13 +7,6 @@ function [k] = SqExpKernelSparse(x,y,hp)
     %   blows up beyond the training data
 
 
-%%%%% Error Message if matrix is not in right orientation (should be vertical)
-if length(x) ~= height(x)
-    disp('Ensure matrices inputted to kernel are VERTICAL (e.g. 100x2)')
-    return
-end
-
-
 %%%%% APPROXIMATE SQUARED EXPONENTIAL KERNEL
 
 % Calculate Distance between Points

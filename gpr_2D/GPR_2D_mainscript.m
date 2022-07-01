@@ -30,48 +30,48 @@ addpath(func_dir);
 % you can do this manually with addpath(.../filepath/gpr_functions) 
     % if below code does not work
 
-%%%%%%%%%%%%%%%%%%
-% IF WE USE SPARSE KERNEL THEN CAN'T DO CHOLESKY SOLVE. ASK KRASNO.
-%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETUP
 
-% Kernel Hyperparameters [not optimized/trained]
-hp.L = 10;           % lengthscale (high = smoother, low = noisier)
-hp.sigma = 2;       % output scale (aka vertical scale or process noise)
+% Kernel Hyperparameters [not optimized/trained] & Noise
+hp.L = 10;                  % lengthscale (high = smoother, low = noisier)
+hp.sigma_p = 2;           % process noise (aka vertical scale, output scale)
+hp.sigma_n = .6;           % sensor noise (used to create W)
+hp.kerneltype = 'exact';    % 'exact' or 'sparse' approximate kernel
+                 % Note: for sparse, hp.L = 40 and hp.sigma_p = 2 for hp.sigma_n = 0.6
+                 % Note: for exact, hp.L = 10 and hp.sigma_p = 2 for hp.sigma_n = 0.6
 
-% Training Data + Gaussian Noise (aka Raw Data)
+% Generate Training Data w/ Gaussian Noise (aka Raw Data)
 nnum = 100; X_beg = -nnum; X_end = nnum;
 X = sort((X_end - X_beg)*rand(nnum,1) + X_beg);           % vertical array, training X, uniform random
 noise.mu = 0; noise.sigma = 0.25;
 Y = 3*sin(2*pi/(0.5*nnum)*X) + (normrnd(noise.mu,noise.sigma,nnum,1)*0.5);  % vertical array, training Y, sinusoidal + noise
 
-% Prediction Points STAR
+% Prediction Points (X_Star)
 X_Star = [[(-15+X_beg):2:(15+X_end)]'; X];            % vertical array, add training data for prediction X
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MATRIX CALCS
 
-% Calculate V and Inv(V)                            % depends on training x-points only
-var_sig = 1;                                      % Noise (sensor noise upon receiving data)
-W = (var_sig.^2)*eye(nnum);                         % Whitenoise (identity * sigmasquared)
-V = K_Function(X,X,hp,'exact') + W;                % Calculate Covariance Matrix using Kernel
+% Calculate V and Inv(V)                                   % depends on training x-points only
+W = (hp.sigma_n^2)*eye(nnum);                              % Whitenoise (identity * sigmasquared)
+V = K_Function(X,X,hp,hp.kerneltype) + W;                  % Calculate Covariance Matrix using Kernel
 %V_inv = inv(V);
 
 
 % Generate K Parameters
-K_Star = K_Function(X_Star,X,hp,'exact');                      % Calculate K_Star for New Point(s)
-K_StarStar = K_Function(X_Star,X_Star,hp,'exact');             % Calculate K_StarStar for New Point(s)
+K_Star = K_Function(X_Star,X,hp,hp.kerneltype);            % Calculate K_Star for New Point(s)
+K_StarStar = K_Function(X_Star,X_Star,hp,hp.kerneltype);   % Calculate K_StarStar for New Point(s)
 
 % Cholesky Decomposition
-L = chol(V,'lower');                                   % Lower triangular cholesky factor
+L = chol(V,'lower');                                       % Lower triangular cholesky factor
 
-% Calculate Predictions!                               % Finally bring in the training y-points here
-%Y_Star_Hat = K_Star * V_inv * Y;                       % Y Predictions (mean values of Gaussians)
+% Calculate Predictions!                                   % Finally bring in the training y-points here
+%Y_Star_Hat = K_Star * V_inv * Y;                          % Y Predictions (mean values of Gaussians)
 Y_Star_Hat = K_Star * CholeskySolve(L,Y);
-%CapSigma_Star = K_StarStar - K_Star * V_inv * K_Star'; % Variance Predictions (gives us mean, var for each pt)
-CapSigma_Star = K_StarStar - K_Star * CholeskySolve(L,K_Star');
-Y_Star_Var = diag(CapSigma_Star);                      % The diagonals store the variances we want!
+%CapSigma_Star = K_StarStar - K_Star * V_inv * K_Star';    % Variance Predictions (gives us mean, var for each pt)
+CapSigma_Star = K_StarStar-K_Star*CholeskySolve(L,K_Star');
+Y_Star_Var = diag(CapSigma_Star);                         % The diagonals store the variances we want!
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOG MARGINAL LIKELIHOOD
@@ -80,9 +80,9 @@ Y_Star_Var = diag(CapSigma_Star);                      % The diagonals store the
 
 %LML = -0.5*log(det(V)) - 0.5*Y'*V_inv*Y - 0.5*nnum*log(2*pi)
 LML = -0.5*log(det(V)) - 0.5*Y'*CholeskySolve(L,Y) - 0.5*nnum*log(2*pi);
-disp(LML)
+LML
 
-LML_array=[];
+%LML_array=[];
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS
