@@ -36,7 +36,7 @@ clc, clearvars, close all, format compact
 hp.L = 3;           % lengthscale (high = smoother, low = noisier)
 hp.sigma_p = 4;         % process noise (output scale / vertical scale)
 hp.sigma_n = 0.6;   % sensor noise (used to create W)
-hp.kerneltype = 'sparse'; % 'exact' or 'sparse' approximate kernel
+hp.kerneltype = 'exact'; % 'exact' or 'sparse' approximate kernel
 
 %%%%%% Generate Random Training Data + Noise (2.5D)
 map_size = 20; % side of square map dimensions, keep this even if you can 

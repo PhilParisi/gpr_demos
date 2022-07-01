@@ -55,13 +55,13 @@ X_Star = [[(-15+X_beg):2:(15+X_end)]'; X];            % vertical array, add trai
 
 % Calculate V and Inv(V)                                   % depends on training x-points only
 W = (hp.sigma_n^2)*eye(nnum);                              % Whitenoise (identity * sigmasquared)
-V = K_Function(X,X,hp,hp.kerneltype) + W;                  % Calculate Covariance Matrix using Kernel
+V = K_Function(X,X,hp) + W;                  % Calculate Covariance Matrix using Kernel
 %V_inv = inv(V);
 
 
 % Generate K Parameters
-K_Star = K_Function(X_Star,X,hp,hp.kerneltype);            % Calculate K_Star for New Point(s)
-K_StarStar = K_Function(X_Star,X_Star,hp,hp.kerneltype);   % Calculate K_StarStar for New Point(s)
+K_Star = K_Function(X_Star,X,hp);            % Calculate K_Star for New Point(s)
+K_StarStar = K_Function(X_Star,X_Star,hp);   % Calculate K_StarStar for New Point(s)
 
 % Cholesky Decomposition
 L = chol(V,'lower');                                       % Lower triangular cholesky factor
