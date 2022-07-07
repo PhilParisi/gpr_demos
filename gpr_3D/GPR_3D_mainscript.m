@@ -5,11 +5,9 @@
 % Z --> depth of seafloor at given position (training outputs)
 
 %%%% GUIDE TO USE
-% .m files you need (all in one folder):
-% 1. this script, which is the main script
-% gpr_functions folder
-    % 2. SqExpKernel.m, the kernel function
-    % 3. K_Function.m, which builds the covariance matrix
+%%% .m files you need:
+% this script, which is the main script
+% gpr_functions folder (located one directory above mainscript)
 
 % Add gpr_functions to the path
 % you can do this manually with addpath(.../filepath/gpr_functions) 
@@ -26,17 +24,17 @@ addpath(func_dir);
 % the GPR data points are plotted in red w/ error bars (uncertainty)
 
 % You can TUNE
-% - Kernel Hyperparameters: lengthscale -> hp.L, verticalscale, hp.sigma
+% - Kernel Hyperparameters
 % - not recommended to change the map_size, but possible
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETUP
 clc, clearvars, close all, format compact
 
 % Kernel Hyperparameters
-hp.L = 3;           % lengthscale (high = smoother, low = noisier)
-hp.sigma_p = 4;         % process noise (output scale / vertical scale)
-hp.sigma_n = 0.6;   % sensor noise (used to create W)
-hp.kerneltype = 'exact'; % 'exact' or 'sparse' approximate kernel
+hp.L = 3.0;               % lengthscale (high = smoother, low = noisier)
+hp.sigma_p = 4.0;         % process noise (output scale / vertical scale)
+hp.sigma_n = 0.2;         % sensor noise (used to create W)
+hp.kerneltype = 'exact';  % 'exact' or 'sparse' approximate kernel
 
 %%%%%% Generate Random Training Data + Noise (2.5D)
 map_size = 20; % side of square map dimensions, keep this even if you can 
@@ -49,7 +47,7 @@ X = X + randn(map_size,map_size);
 Y = Y + randn(map_size,map_size);
 Z = 1*sin(X) + Y/20;                    % shape of curve!
 % gaussian nosie
-noise.mu = 0; noise.sigma = 0.25;
+noise.mu = 0; noise.sigma = hp.sigma_n;
 Z = Z + normrnd(noise.mu,noise.sigma,map_size,map_size)/5;
 
 % Reshape (map_size^2 x 1)
@@ -85,32 +83,42 @@ disp('...test data generated, run the next section...')
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MATRIX CALCS
-clc, close all, disp('...running, may take a minute...')
+clc, close all, disp('...running GPR, may take a minute...')
 tic 
 
 % Calculate V and Inv(V)                            % depends on training x-points only
 W = (hp.sigma_n^2)*eye(nnum);                       % Whitenoise (identity * sigmasquared)
 V = K_Function(X,X,hp) + W;                         % Calculate Covariance Matrix using Kernel
-%V_inv = inv(V); %expensive!
-
 
 % Generate K Parameters
-K_Star = K_Function(X_Star,X,hp);                   % Calculate K_Star for New Point(s)
 tic
+K_Star = K_Function(X_Star,X,hp);                   % Calculate K_Star for New Point(s)
 K_StarStar = K_Function(X_Star,X_Star,hp);          % Calculate K_StarStar for New Point(s)
-kerneltime = toc
+prediction_kernel_calc_time = toc;
+
 % Cholesky Decomposition
-L = chol(V,'lower');                               % Lower triangular cholesky factor
+L = chol(V,'lower');                                % Lower triangular cholesky factor
 
-% Calculate Predictions!                            % Finally bring in the training y-points here
-%Y_Star_Hat = K_Star * V_inv * Y;                    % Y Predictions (mean values of Gaussians)
-Y_Star_Hat = K_Star * CholeskySolve(L,Y);
-%CapSigma_Star = K_StarStar - K_Star * V_inv * K_Star'; % Variance Predictions (gives us mean, var for each pt)
-CapSigma_Star = K_StarStar-K_Star*CholeskySolve(L,K_Star');
-Y_Star_Var = diag(CapSigma_Star);                      % The diagonals store the variances we want!
+% Calculate Predictions!                                    % Finally bring in the training y-points here
+Y_Star_Hat = K_Star * CholeskySolve(L,Y);                   % Mean Predictions (mean values of Gaussians)
+CapSigma_Star = K_StarStar-K_Star*CholeskySolve(L,K_Star'); % Variance Predictions (prediction covariance matrix)
+Y_Star_Var = diag(CapSigma_Star);                           % The diagonals store the variances we want!
 
-toc
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOG MARGINAL LIKELIHOOD
+
+% How good is our fit? Use this to tune hyperparameters
+LML = calcLML(L,Y,nnum);
+AlgoTime = toc;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS & OUTPUTS
+
+%%%% Output LML
+clc
+fprintf('KernelPredictionTime = %1.2f.\n',prediction_kernel_calc_time)
+fprintf('AlgoTime = %1.2f.\n',AlgoTime)
+fprintf('Log Marginal Likelihood is %1.1f. Tune hyperparams for better fit.\n',LML)
 
 %%%% Plot Raw Data
 figure
@@ -144,8 +152,8 @@ zlim([-5 5])
 % Training and Prediction Data
 figure
 scatter3(X(:,1),X(:,2),Y, ...       % Training Data
-    2, ... % marker size
-    'k') % color of pts
+    5, ... % marker size
+    'r') % color of pts
 hold on
 
 scatter3(X_Star(:,1),X_Star(:,2),Y_Star_Hat,...  % Predictions
