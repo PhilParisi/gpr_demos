@@ -75,14 +75,13 @@ Y_Star_Var = diag(CapSigma_Star);                         % The diagonals store 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOG MARGINAL LIKELIHOOD
-% How good is our fit?
-% note log in compsci means natural log, and matlab's log() is natural log
+% How good is our fit? Use this to tune hyperparameters
+% logs are natural logs by MATLAB
 
 %LML = -0.5*log(det(V)) - 0.5*Y'*V_inv*Y - 0.5*nnum*log(2*pi)
-LML = -0.5*log(det(V)) - 0.5*Y'*CholeskySolve(L,Y) - 0.5*nnum*log(2*pi);
-LML
+%LML = -0.5*log(det(V)) - 0.5*Y'*CholeskySolve(L,Y) - 0.5*nnum*log(2*pi);
+LML = -log(prod(diag(L),'all')) - 0.5*Y'*CholeskySolve(L,Y) - 0.5*nnum*log(2*pi);
 
-%LML_array=[];
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS
