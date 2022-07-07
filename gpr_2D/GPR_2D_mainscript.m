@@ -50,7 +50,6 @@ X_Star = [[(-15+X_beg):.5:(15+X_end)]'; X];            % vertical array, add tra
 W = (hp.sigma_n^2)*eye(nnum);                % Whitenoise (identity * sigmasquared)
 V = K_Function(X,X,hp) + W;                  % Calculate Covariance Matrix using Kernel
 
-
 % Generate K Parameters
 K_Star = K_Function(X_Star,X,hp);            % Calculate K_Star for New Point(s)
 K_StarStar = K_Function(X_Star,X_Star,hp);   % Calculate K_StarStar for New Point(s)
@@ -59,20 +58,17 @@ K_StarStar = K_Function(X_Star,X_Star,hp);   % Calculate K_StarStar for New Poin
 L = chol(V,'lower');                         % Lower triangular cholesky factor
 
 % Calculate Predictions!                                    % Finally bring in the training y-points here
-Y_Star_Hat = K_Star * CholeskySolve(L,Y);                   % Y Predictions (mean values of Gaussians)
-CapSigma_Star = K_StarStar-K_Star*CholeskySolve(L,K_Star'); % Variance Predictions (gives us mean, var for each pt)
+Y_Star_Hat = K_Star * CholeskySolve(L,Y);                   % Mean Predictions (mean of Gaussians)
+CapSigma_Star = K_StarStar-K_Star*CholeskySolve(L,K_Star'); % Variance Predictions (prediction covariance matrix)
 Y_Star_Var = diag(CapSigma_Star);                           % The diagonals store the variances we want!
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOG MARGINAL LIKELIHOOD
 
 % How good is our fit? Use this to tune hyperparameters
-% logs are natural logs in MATLAB
-
-%LML = -0.5*log(det(V)) - 0.5*Y'*CholeskySolve(L,Y) - 0.5*nnum*log(2*pi);
-LML = -log(prod(diag(L),'all')) - 0.5*Y'*CholeskySolve(L,Y) - 0.5*nnum*log(2*pi);
-
+LML = calcLML(L,Y,nnum);
 AlgoTime = toc;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PLOTS & OUTPUTS
 
