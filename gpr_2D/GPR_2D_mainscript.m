@@ -26,7 +26,7 @@ addpath(func_dir);
 % - nnum, number of points you want in the dataset
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETUP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETUP
 
 % Kernel Hyperparameters [not optimized/trained] & Noise
 hp.L = 15;                   % lengthscale (high = smoother, low = noisier)
@@ -35,7 +35,8 @@ hp.sigma_n = 0.1;            % sensor noise (used to create W)
 hp.kerneltype = 'exact';     % 'exact' or 'sparse' approximate kernel
 
 % Generate Training Data w/ Gaussian Noise (aka Raw Data)
-nnum = 100; X_beg = -nnum; X_end = nnum;
+nnum = 400; 
+X_beg = -nnum; X_end = nnum;
 X = sort((X_end - X_beg)*rand(nnum,1) + X_beg);       % vertical array, training X, uniform random
 noise.mu = 0; noise.sigma = hp.sigma_n;
 Y = 3*sin(2*pi/(0.5*nnum)*X) + (normrnd(noise.mu,noise.sigma,nnum,1)*0.5);  % vertical array, training Y, sinusoidal + noise
@@ -76,7 +77,7 @@ AlgoTime = toc;
 fprintf('AlgoTime = %1.2f.\n',AlgoTime)
 fprintf('Log Marginal Likelihood is %1.1f. Tune hyperparams for better fit.\n',LML)
 
-
+%%% Plot GPR
 % Organize Data to Plot It (created new obj
 sortobj = [X_Star, Y_Star_Hat, Y_Star_Var];
 sortobj = sortrows(sortobj);
